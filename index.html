@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Declaration of Assets and Liabilities - Fully Editable & Uppercase</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+  body { font-family: 'Times New Roman', Times, serif; background-color: #eef2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+
+  /* ==================== A4 PAGES PREVIEW ==================== */
+  .a4-page {
+    background: #ffffff; 
+    width: 210mm; 
+    height: 297mm; 
+    padding: 0.50in 0.60in; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.2); 
+    margin-bottom: 30px; 
+    position: relative; 
+    font-size: 14px; 
+    line-height: 1.35; 
+    color: #000;
+    overflow: hidden; 
+  }
+
+  /* Text & Headers */
+  .doc-title { text-align: center; font-size: 16px; font-weight: bold; text-decoration: underline; margin-bottom: 5px; }
+  .year-text { text-align: right; font-weight: bold; margin-bottom: 8px; }
+  
+  .intro-para { text-align: justify; margin-bottom: 12px; line-height: 1.6; }
+  
+  /* Editable fields indicator on screen with Uppercase enforcement */
+  [contenteditable="true"] {
+    background-color: rgba(255, 255, 200, 0.3);
+    outline: 1px dashed #0a3d62;
+    padding: 2px;
+    text-transform: uppercase;
+  }
+  [contenteditable="true"]:focus {
+    background-color: #fff;
+    outline: 2px solid #0a3d62;
+  }
+
+  /* Class to remove highlight during PDF generation */
+  .pdf-export-mode [contenteditable="true"] {
+    background-color: transparent !important;
+    outline: none !important;
+  }
+
+  .fill-blank { border-bottom: 1px dotted #000; padding: 0 5px; display: inline-block; font-weight: bold; text-align: center; min-width: 40px; text-transform: uppercase; }
+  
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 13px; table-layout: fixed; }
+  th, td { border: 1px solid #000; padding: 4px; vertical-align: middle; text-align: center; word-wrap: break-word; }
+  th { font-weight: bold; }
+  
+  .col-desc { text-align: left !important; width: 22%; padding-left: 6px; }
+  .col-sr { width: 7.5%; border: 1px solid #000 !important; }
+  .col-val { width: 13.8%; }
+  .liab-desc { text-align: left !important; width: 34%; padding-left: 6px; }
+
+  .table-p1 td { height: 80px; } 
+  .table-p2-a td { height: 42px; } 
+  .table-p2-b td { height: 35px; } 
+  .table-p3 td { height: 32px; border: 1px solid #000 !important; }
+
+  .sec-heading { font-weight: bold; margin: 6px 0 3px 0; }
+  .note-text { font-size: 11.5px; margin-bottom: 6px; line-height: 1.2; }
+
+  /* Personal Details Formatting */
+  .pd-row { display: flex; margin-bottom: 5px; align-items: center; }
+  .pd-lbl { width: 140px; }
+  .pd-val { font-weight: bold; }
+  
+  .dob-boxes { display: flex; gap: 2px; margin-left: 10px; margin-right: 10px;}
+  .dob-box { border: 1px solid #000; width: 18px; height: 22px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+
+  /* Signature Block */
+  .footer-decl { margin-top: 10px; text-align: justify; line-height: 1.4; margin-bottom: 10px; }
+  .sig-block { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;}
+  .sig-left { width: 45%; display: flex; flex-direction: column; gap: 5px; }
+  .sig-right { width: 50%; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+  
+  .sign-image-box { height: 35px; margin-bottom: 2px; display: flex; justify-content: flex-start; }
+  .sign-image-box img { max-height: 100%; max-width: 150px; display: none; mix-blend-mode: multiply; }
+  
+  .bottom-note { 
+    position: absolute; 
+    bottom: 10mm; 
+    left: 15mm; 
+    right: 15mm; 
+    font-size: 11.5px; 
+    text-align: justify; 
+    border-top: 1px solid #000; 
+    padding-top: 4px; 
+  }
+
+
+
+
+
+  /* ==================== SAB BHARA HUA DATA BOLD ==================== */
+  [contenteditable="true"] { font-weight: bold !important; }
+
+  /* ==================== TABLE DROPDOWNS (NIL first) ==================== */
+  td[data-opts] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%230a3d62'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 3px bottom 3px; }
+  .pdf-export-mode td[data-opts] { background-image: none !important; }
+  #optMenu { display: none; position: absolute; z-index: 9000; background: #fff; border: 2px solid #0a3d62; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); max-height: 230px; overflow-y: auto; font: 13px Arial, sans-serif; text-transform: uppercase; text-align: left; color: #000; }
+  .opt-item { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #eee; white-space: normal; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  .opt-add { color: #1b4f72; font-weight: bold; background: #eaf2f8; position: sticky; bottom: 0; border-top: 2px solid #0a3d62; }
+  .opt-del { color: #c0392b; font-weight: bold; padding: 0 6px; }
+  .opt-item:hover, .opt-item.active { background: #d6eaf8; }
+  .opt-item.nil { font-weight: bold; color: #1e8449; }
+  .btn-nil { background-color: #16a085; }
+  .opt-back { background: transparent; color: #fff; border: 1px solid #fff; border-radius: 5px; padding: 5px 9px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .opt-title { flex: 1; text-align: center; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .opt-form { padding: 8px 10px 12px; display: flex; flex-direction: column; gap: 10px; text-transform: none; }
+  .opt-form label { display: block; font-size: 12px; font-weight: bold; color: #0a3d62; margin-bottom: 3px; text-transform: none; }
+  .opt-form input[type="text"] { width: 100%; box-sizing: border-box; padding: 10px; font-size: 16px; font-weight: bold; border: 2px solid #0a3d62; border-radius: 6px; text-transform: uppercase; }
+  .opt-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .opt-row input[type="text"] { width: 130px; flex: 0 0 auto; }
+  .opt-units { display: flex; flex-wrap: wrap; gap: 5px; }
+  .opt-unit { padding: 8px 10px; border: 2px solid #0a3d62; border-radius: 16px; background: #fff; color: #0a3d62; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .opt-unit.on { background: #0a3d62; color: #fff; }
+  .opt-go { background: #27ae60; color: #fff; border: none; border-radius: 6px; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; }
+
+  .fill-blank[data-opts] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%230a3d62'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 3px center; padding-right: 16px; }
+  .pdf-export-mode .fill-blank[data-opts] { background-image: none !important; padding-right: 5px !important; }
+  #optMenu { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .opt-head { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #0a3d62; color: #fff; padding: 6px 8px 6px 10px; font-size: 12px; font-weight: bold; }
+  .opt-ok { background: #27ae60; color: #fff; border: none; border-radius: 5px; padding: 6px 16px; font-size: 14px; font-weight: bold; cursor: pointer; }
+  #optMenu.sheet { position: fixed; border-width: 2px 0 0 0; border-radius: 14px 14px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,0.35); z-index: 99990; }
+  #optMenu.sheet .opt-item { padding: 13px 12px; font-size: 15px; }
+  #optMenu.sheet .opt-ok { padding: 8px 22px; font-size: 15px; }
+  @media print { td[data-opts], .fill-blank[data-opts] { background-image: none !important; } .fill-blank[data-opts] { padding-right: 5px !important; } #optMenu { display: none !important; } }
+
+  /* ==================== YEAR DROPDOWN / TOOLBAR ==================== */
+  .year-sel { font-family: inherit; font-size: 14px; font-weight: bold; padding: 2px 4px; border: 1px dashed #0a3d62; background: rgba(255,255,200,0.3); }
+  #yearPrint { display: none; min-width: 80px; }
+  .pdf-export-mode .year-sel { display: none !important; }
+  .pdf-export-mode #yearPrint { display: inline-block !important; }
+  .action-buttons.toolbar { flex-direction: column; align-items: stretch; width: 210mm; max-width: 100%; gap: 8px; }
+  .tb-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tb-lbl { font-weight: bold; font-size: 14px; }
+  .teacher-sel { font-size: 14px; padding: 8px; min-width: 220px; max-width: 100%; border: 2px solid #0a3d62; border-radius: 5px; font-weight: bold; }
+  .toolbar .btn { padding: 9px 14px; font-size: 13px; }
+  .btn-add { background-color: #2980b9; }
+  .btn-del { background-color: #922b21; }
+  .btn-merge { background-color: #8e44ad; }
+  .btn-zip { background-color: #d35400; }
+  .btn-backup { background-color: #34495e; }
+  .tb-tip { font-size: 12.5px; color: #333; font-weight: bold; }
+  #busyOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); color: #fff; z-index: 99999; align-items: center; justify-content: center; text-align: center; font: bold 18px Arial, sans-serif; padding: 20px; }
+  @media print { .year-sel { display: none !important; } #yearPrint { display: inline-block !important; } #busyOverlay { display: none !important; } }
+
+  /* ==================== EXTRA CONVENIENCE STYLES ==================== */
+  .dob-boxes { align-items: center; }
+  .dob-sep { font-weight: bold; padding: 0 2px; }
+  .dob-box:focus { outline: 2px solid #0a3d62; background: #fff; }
+  .today-btn { font-size: 11px; padding: 2px 6px; margin-left: 4px; cursor: pointer; border: 1px solid #0a3d62; background: #eaf2f8; border-radius: 3px; }
+  .btn-clear { background-color: #7f8c8d; }
+  .save-status { align-self: center; font-size: 12px; color: #27ae60; font-weight: bold; }
+  .pdf-export-mode .today-btn { display: none !important; }
+
+  .action-buttons { display: flex; gap: 15px; margin-bottom: 20px; }
+  .btn { padding: 12px 24px; color: white; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; font-weight: bold; }
+  .btn-pdf { background-color: #c0392b; }
+  .btn-print { background-color: #27ae60; }
+  
+  .no-shadow { box-shadow: none !important; margin: 0 !important; }
+  [contenteditable="true"]:hover { background-color: rgba(255, 255, 150, 0.5); }
+
+  @media print {
+    body { background: none; padding: 0; }
+    .action-buttons, .today-btn { display: none !important; }
+    .a4-page { box-shadow: none; margin: 0; padding: 0; page-break-after: always; }
+    [contenteditable="true"] { outline: none !important; background: transparent !important; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="action-buttons toolbar">
+  <div class="tb-row">
+    <label class="tb-lbl" for="teacherSel">Teacher:</label>
+    <select id="teacherSel" class="teacher-sel" onchange="switchTeacher(this.value)"></select>
+    <button class="btn btn-add" onclick="addTeacher()">&#10133; Naya Teacher Add Karein</button>
+    <button class="btn btn-del" onclick="deleteTeacher()">&#128465; Is Teacher Ko Hatayein</button>
+    <span class="save-status" id="saveStatus"></span>
+  </div>
+  <div class="tb-row">
+    <button class="btn btn-pdf" onclick="runExport('one')">PDF (Sirf Yeh Teacher)</button>
+    <button class="btn btn-merge" onclick="runExport('merge')">Sabhi Teacher - Ek Merge PDF</button>
+    <button class="btn btn-zip" onclick="runExport('zip')">Sabhi Alag-Alag PDF (ZIP)</button>
+    <button class="btn btn-print" onclick="window.print()">Print (Yeh Teacher)</button>
+  </div>
+  <div class="tb-row">
+    <button class="btn btn-nil" onclick="fillNil()">Khali Cells Mein NIL Bharein</button>
+    <button class="btn btn-clear" onclick="clearAll()">Is Form Ko Saaf Karein</button>
+    <button class="btn btn-backup" onclick="backupDownload()">Backup Download (JSON)</button>
+    <button class="btn btn-backup" onclick="document.getElementById('restoreInput').click()">Backup Wapas Layein</button>
+    <input type="file" id="restoreInput" accept=".json,application/json" style="display:none" onchange="restoreFile(this)">
+  </div>
+  <div class="tb-tip">Tip: Type karein - Enter dabane par agle box mein jayega. Date mein sirf number type karein, / apne aap lagega. Data apne aap save hota hai; ek teacher ka form poora hone par "Naya Teacher Add Karein" dabayein.</div>
+</div>
+<div id="optMenu"></div>
+<div id="busyOverlay"><div id="busyText">Please wait...</div></div>
+
+<!-- ==================== PAGE 1 ==================== -->
+<div class="a4-page" id="page1">
+  <div class="doc-title">Declaration of Assets and Liabilities</div>
+  <div class="year-text">Year.. <select id="yearSel" class="year-sel"></select><span class="fill-blank" id="yearPrint"></span></div>
+  
+  <div class="intro-para">
+    I, <span class="fill-blank" id="nameTop" contenteditable="true" style="min-width: 180px;"></span> son/daughter/wife of. <span class="fill-blank" contenteditable="true" style="min-width: 150px;"></span> aged.. <span class="fill-blank" id="ageField" data-type="number" contenteditable="true" style="min-width: 50px;"></span> years, belonging to <span class="fill-blank" id="serviceTop" contenteditable="true" style="min-width: 180px;"></span> service and presently working as <span class="fill-blank" id="workTop" contenteditable="true" style="min-width: 250px;"></span> give herein below the details of the assets (immovable, movable, bank balance, etc.) of myself, my spouse and dependants*:
+  </div>
+
+  <div class="sec-heading">A. Details of movable assets</div>
+  <div class="note-text">(Assets in joint name indicating the extent of joint ownership will also have to be given)</div>
+  
+  <table class="data-table table-p1">
+    <tr>
+      <th class="col-sr">Sr.<br>No.</th>
+      <th class="col-desc" style="text-align:center !important;">Description</th>
+      <th class="col-val">Self</th>
+      <th class="col-val">Spouse Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+      <th class="col-val">Dependant-1 Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+      <th class="col-val">Dependant-2 Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+      <th class="col-val">Dependant-3 Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+    </tr>
+    <tr><td>(i)</td><td class="col-desc">Cash</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(ii)</td><td class="col-desc">Deposits in Banks, Financial Institutions And Non-Banking Financial Companies</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(iii)</td><td class="col-desc">Bonds,<br>Debentures and Shares in companies</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(iv)</td><td class="col-desc">Other financial institutions, NSS. Postal Savings, LIC Policies, etc</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(v)</td><td class="col-desc">Motor Vehicles (details of make, etc.)</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(vi)</td><td class="col-desc">Jewellery (give details of weight and value)</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(vii)</td><td class="col-desc">Other assets, such as values of claims/interests</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+  </table>
+  
+  <div class="bottom-note">
+    Note: Value of Bonds / shares / Debentures as per the latest market value in Stock Exchange in respect of listed companies and as per books in the case of non listed companies should be given.<br>
+    * Dependant here means a person substantially dependent on the income of the employee.
+  </div>
+</div>
+
+<!-- ==================== PAGE 2 ==================== -->
+<div class="a4-page" id="page2">
+  <div class="sec-heading" style="margin-top: 0; margin-bottom: 2px;">B. Details of Immovable assets</div>
+  <div class="note-text" style="margin-bottom: 4px;">[Note: Properties in joint ownership indicating the extent of joint ownership will also have to be indicated]</div>
+  
+  <table class="data-table table-p2-a">
+    <tr>
+      <th class="col-sr">Sr.<br>No.</th>
+      <th class="col-desc" style="text-align:center !important;">Description</th>
+      <th class="col-val">Self</th>
+      <th class="col-val">Spouse Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+      <th class="col-val">Dependant-1 Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+      <th class="col-val">Dependant-2 Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+      <th class="col-val">Dependant-3 Name<br><span contenteditable="true" style="display:inline-block; width:80px; font-weight:normal;"></span></th>
+    </tr>
+    <tr><td>(i)</td><td class="col-desc">Agricultural Land<br>Location(s)<br>Survey number(s)<br>Extent (Total measurement)<br>-Current market value</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(ii)</td><td class="col-desc">Non-Agricultural Land<br>Location(s)<br>Survey number(s)<br>Extent (Total measurement)<br>-Current market value</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(iii)</td><td class="col-desc">Buildings (Commercial and residential)<br>Location(s)<br>Survey/door number(s)<br>Extent (Total measurement)<br>Current market value</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(iv)</td><td class="col-desc">Houses / Apartments, etc.<br>Location(s)<br>Survey/door number(s)<br>Extent (Total measurement)<br>Current market value</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    <tr><td>(v)</td><td class="col-desc">Others (such as interest in property)</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+  </table>
+
+  <div style="margin-bottom: 2px; margin-top: 6px; font-size: 13px;">(2) &nbsp;&nbsp;&nbsp;&nbsp; I give herein below the details of my liabilities / overdues to public financial institutions and government dues:-</div>
+  <div class="note-text" style="margin-bottom: 3px;">[Note : Please give separate details for each item]</div>
+  
+  <table class="liability-table table-p2-b">
+    <tr>
+      <th class="col-sr">Sr.<br>No.</th>
+      <th class="liab-desc" style="text-align:center !important;">Description</th>
+      <th style="width: 30%;">Name & address of Bank /<br>Financial Institutions (s) /<br>Department (s)</th>
+      <th style="width: 25%;">Amount outstanding as<br>on <span class="fill-blank" data-type="date" contenteditable="true" style="min-width: 90px;"></span></th>
+    </tr>
+    <tr>
+      <td rowspan="6">(a)</td>
+      <td class="liab-desc">(i) Loans from Banks</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(ii) Loans from financial institutions</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(iii) Government Dues:<br>(a) dues to departments dealing with government accommodation</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(b) dues to departments dealing with supply of water</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(c) dues to departments dealing with supply of electricity</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ==================== PAGE 3 ==================== -->
+<div class="a4-page" id="page3">
+  <table class="liability-table table-p3">
+    <tr>
+      <td class="col-sr" style="border-top: none;">&nbsp;</td>
+      <td class="liab-desc">(d) dues to departments dealing with telephones</td>
+      <td style="width: 30%;" contenteditable="true"></td>
+      <td style="width: 25%;" contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td class="liab-desc">(e) dues to departments dealing with government transport (including aircraft and helicopters)</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+      <td class="liab-desc">(f) Other dues, if any</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td rowspan="4">(b)</td>
+      <td class="liab-desc">(i) Income Tax including surcharge [Also indicate the assessment year upto which Income Tax Return filed. Give also Permanent Account Number (PAN)]</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(ii) Wealth Tax [Also indicate the assessment year upto which Wealth Tax return filed.]</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(iii) Sales Tax [Only in case of proprietary business]</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+    <tr>
+      <td class="liab-desc">(iv) Property Tax</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+    </tr>
+  </table>
+
+  <div class="sec-heading" style="font-size: 15px;">C. Personal Detail</div>
+  
+  <div class="pd-row">
+    <div class="pd-lbl">GPF/CPF/PRAN No.</div><div>:- <span class="fill-blank" contenteditable="true" style="min-width: 150px;"></span></div>
+  </div>
+  <div class="pd-row">
+    <div class="pd-lbl">Gender</div><div>:- <span class="fill-blank" data-type="gender" contenteditable="true" style="min-width: 40px;"></span> (M/F)</div>
+  </div>
+  <div class="pd-row">
+    <div class="pd-lbl">Date of Birth</div>
+    <div>:-</div>
+    <div class="dob-boxes" id="dobBoxesOut">
+      <div class="dob-box" contenteditable="true" inputmode="numeric"></div><div class="dob-box" contenteditable="true" inputmode="numeric"></div><span class="dob-sep">/</span><div class="dob-box" contenteditable="true" inputmode="numeric"></div><div class="dob-box" contenteditable="true" inputmode="numeric"></div><span class="dob-sep">/</span><div class="dob-box" contenteditable="true" inputmode="numeric"></div><div class="dob-box" contenteditable="true" inputmode="numeric"></div><div class="dob-box" contenteditable="true" inputmode="numeric"></div><div class="dob-box" contenteditable="true" inputmode="numeric"></div>
+    </div>
+    <div>DD/MM/YYYY</div>
+  </div>
+  <div class="pd-row">
+    <div class="pd-lbl">Class/Group</div><div>:- <span class="fill-blank" data-type="class" contenteditable="true" style="min-width: 40px;"></span> (A/B/C)</div>
+  </div>
+  <div class="pd-row">
+    <div class="pd-lbl">Cadre</div><div>:- <span class="fill-blank" contenteditable="true" style="min-width: 250px;"></span></div>
+  </div>
+  <div style="margin-left: 140px; font-size: 12px; margin-bottom: 6px;">(Full Name e.g. B.A.S.-Bihar Administrative Service, B.S.S.- Bihar Secretariat Service etc.)</div>
+  <div class="pd-row">
+    <div class="pd-lbl">Home District</div><div>:- <span class="fill-blank" contenteditable="true" style="min-width: 150px;"></span></div>
+  </div>
+
+  <div class="footer-decl">
+    I hereby declare that the above details are true to the best of my knowledge and belief.
+  </div>
+
+  <div class="sig-block">
+    <div class="sig-left">
+      <div>Place: <span class="fill-blank" id="placeSign" contenteditable="true" style="min-width: 120px;"></span></div>
+      <div>Date: <span class="fill-blank" id="sigDate" data-type="date" data-share="1" contenteditable="true" style="min-width: 120px;"></span> <button type="button" class="today-btn" onclick="fillToday()">Aaj ki date</button></div>
+    </div>
+    <div class="sig-right">
+      <div class="sign-image-box"><img id="authSignImg" alt="Sign"></div>
+      <div style="margin-bottom: 5px;">Signature ..................................................</div>
+      <div>Name of Employee: <span class="fill-blank" id="nameSign" contenteditable="true" style="font-weight: bold; min-width: 180px;"></span></div>
+      <div>Designation: <span class="fill-blank" contenteditable="true" style="min-width: 150px;"></span></div>
+      <div>Department: <span class="fill-blank" id="deptSign" contenteditable="true" style="min-width: 180px;"></span></div>
+    </div>
+  </div>
+
+  <div class="bottom-note">
+    Note:-Please sign each page of the declaration. Asset declaration form must be in A4 size white paper with computer typed (single side) in prescribed format.
+  </div>
+</div>
+
+<script>
+  // ==================== SMART FORM HELPERS ====================
+  const dobBoxes = Array.from(document.querySelectorAll('#dobBoxesOut .dob-box'));
+
+  // All editable fields in page order (DOB boxes handled separately by their own logic)
+  function allFields() { return Array.from(document.querySelectorAll('[contenteditable="true"]')); }
+
+  function focusEnd(el) {
+    el.focus();
+    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  function focusAll(el) {
+    el.focus();
+    const r = document.createRange(); r.selectNodeContents(el);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+
+  // ---------- 1) DOB: one digit per box, auto-advance ----------
+  dobBoxes.forEach((box, i) => {
+    box.addEventListener('keydown', e => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        box.textContent = e.key;
+        if (i < dobBoxes.length - 1) focusAll(dobBoxes[i + 1]);
+        else { document.getElementById('dobBoxesOut').dispatchEvent(new Event('dobchange', {bubbles:true})); }
+        dobChanged();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        if (box.textContent) { box.textContent = ''; }
+        else if (i > 0) { dobBoxes[i - 1].textContent = ''; focusAll(dobBoxes[i - 1]); }
+        dobChanged();
+      } else if (e.key === 'Delete') {
+        e.preventDefault(); box.textContent = ''; dobChanged();
+      } else if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) focusAll(dobBoxes[i - 1]); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); if (i < dobBoxes.length - 1) focusAll(dobBoxes[i + 1]); }
+      else if (e.key === 'Enter') { e.preventDefault(); moveNext(box); }
+      else if (e.key.length === 1) { e.preventDefault(); } // block letters/symbols
+    });
+    // Mobile keyboards often skip keydown -> handle input as well
+    box.addEventListener('input', () => {
+      const d = box.textContent.replace(/\D/g, '');
+      box.textContent = d.slice(0, 1);
+      if (d.length && i < dobBoxes.length - 1) focusAll(dobBoxes[i + 1]);
+      dobChanged();
+    });
+    box.addEventListener('focus', () => focusAll(box));
+    // Paste full date e.g. 15/08/1990 or 15081990
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const d = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 8);
+      for (let k = 0; k < d.length && i + k < dobBoxes.length; k++) dobBoxes[i + k].textContent = d[k];
+      const next = Math.min(i + d.length, dobBoxes.length - 1);
+      focusAll(dobBoxes[next]); dobChanged();
+    });
+  });
+
+  function dobValue() { return dobBoxes.map(b => b.textContent).join(''); }
+
+  // Age auto-calculate once all 8 digits are filled
+  function dobChanged() {
+    const v = dobValue();
+    if (v.length === 8) {
+      const dd = +v.slice(0,2), mm = +v.slice(2,4), yy = +v.slice(4,8);
+      const dob = new Date(yy, mm - 1, dd);
+      const valid = dob.getFullYear() === yy && dob.getMonth() === mm - 1 && dob.getDate() === dd && yy > 1900 && dob <= new Date();
+      dobBoxes.forEach(b => b.style.background = valid ? '' : '#ffd6d6');
+      if (valid) {
+        const t = new Date();
+        let age = t.getFullYear() - yy;
+        if (t.getMonth() < mm - 1 || (t.getMonth() === mm - 1 && t.getDate() < dd)) age--;
+        const af = document.getElementById('ageField');
+        if (af && (!af.textContent.trim() || af.dataset.auto === '1')) { af.textContent = age; af.dataset.auto = '1'; }
+      }
+    } else {
+      dobBoxes.forEach(b => b.style.background = '');
+    }
+    scheduleSave();
+  }
+
+  // ---------- 2) Other date fields (Date, Outstanding-as-on): DD/MM/YYYY auto slash ----------
+  function maskDate(el) {
+    const d = el.textContent.replace(/\D/g, '').slice(0, 8);
+    let out = d;
+    if (d.length > 4) out = d.slice(0,2) + '/' + d.slice(2,4) + '/' + d.slice(4);
+    else if (d.length > 2) out = d.slice(0,2) + '/' + d.slice(2);
+    if (el.textContent !== out) { el.textContent = out; focusEnd(el); }
+  }
+  function fillToday() {
+    const t = new Date();
+    const el = document.getElementById('sigDate');
+    el.textContent = String(t.getDate()).padStart(2,'0') + '/' + String(t.getMonth()+1).padStart(2,'0') + '/' + t.getFullYear();
+    scheduleSave();
+  }
+
+  // ---------- Upar ke paragraph se neeche ke boxes mein apne aap copy ----------
+  // "I, ___" -> Name of Employee | "belonging to ___" -> Department | "presently working as ___" -> Place
+  // Agar aap neeche wale box ko khud badal dein to wo copy ruk jata hai; box khali karne par phir se chalu.
+  const SYNC_PAIRS = [['nameTop', 'nameSign'], ['serviceTop', 'deptSign'], ['workTop', 'placeSign']];
+  function syncFrom(el) {
+    SYNC_PAIRS.forEach(([src, dst]) => {
+      const S = document.getElementById(src), D = document.getElementById(dst);
+      if (!S || !D) return;
+      if (el === S && D.dataset.touched !== '1') D.textContent = S.textContent;
+      if (el === D) D.dataset.touched = D.textContent.trim() ? '1' : '0';
+    });
+  }
+  function recomputeSyncFlags() {
+    SYNC_PAIRS.forEach(([src, dst]) => {
+      const S = document.getElementById(src), D = document.getElementById(dst);
+      if (S && D) D.dataset.touched = (D.textContent.trim() && D.textContent !== S.textContent) ? '1' : '0';
+    });
+  }
+
+  // Page 1 table ke Spouse / Dependant-1,2,3 naam -> Page 2 table ke same headers mein apne aap
+  (function () {
+    const a = document.querySelectorAll('.table-p1 th span[contenteditable="true"]');
+    const b = document.querySelectorAll('.table-p2-a th span[contenteditable="true"]');
+    a.forEach((el, i) => {
+      if (!b[i]) return;
+      el.id = 'hdrP1_' + i; b[i].id = 'hdrP2_' + i;
+      SYNC_PAIRS.push(['hdrP1_' + i, 'hdrP2_' + i]);
+    });
+  })();
+
+  // ---------- 3) Field rules ----------
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (!(el instanceof HTMLElement) || !el.matches('[contenteditable="true"]') || el.classList.contains('dob-box')) return;
+    const type = el.dataset.type;
+    if (type === 'date') maskDate(el);
+    if (type === 'gender') { const v = el.textContent.toUpperCase().replace(/[^MF]/g, '').slice(-1); if (el.textContent !== v) { el.textContent = v; focusEnd(el); } if (v) moveNext(el); }
+    if (type === 'class')  { const v = el.textContent.toUpperCase().replace(/[^ABC]/g, '').slice(-1); if (el.textContent !== v) { el.textContent = v; focusEnd(el); } if (v) moveNext(el); }
+    if (type === 'number') { const v = el.textContent.replace(/\D/g, '').slice(0, 3); if (el.textContent !== v) { el.textContent = v; focusEnd(el); } el.dataset.auto = '0'; }
+    syncFrom(el);
+    scheduleSave();
+  });
+
+  // ---------- 4) Enter = next box (single-line fields); Shift+Enter = new line in big table cells ----------
+  function moveNext(el) {
+    const f = allFields(); const i = f.indexOf(el);
+    if (i > -1 && i < f.length - 1) focusAll(f[i + 1]);
+  }
+  document.addEventListener('keydown', e => {
+    const el = e.target;
+    if (e.key !== 'Enter' || !(el instanceof HTMLElement) || !el.matches('[contenteditable="true"]') || el.classList.contains('dob-box')) return;
+    if (e.shiftKey) return; // allow line break
+    e.preventDefault(); moveNext(el);
+  });
+
+  // ---------- 5) Paste as plain text (formatting kharab na ho) ----------
+  document.addEventListener('paste', e => {
+    const el = e.target;
+    if (!(el instanceof HTMLElement) || !el.matches('[contenteditable="true"]') || el.classList.contains('dob-box')) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\r?\n/g, ' ');
+    document.execCommand('insertText', false, text);
+  });
+
+  // ---------- 6) Multi-teacher store + auto-save ----------
+  const STORE_KEY = 'propertyReturnForm_v2';
+  const OLD_KEY = 'propertyReturnForm_v1';
+  const yearSel = document.getElementById('yearSel');
+  const yearPrint = document.getElementById('yearPrint');
+  const teacherSel = document.getElementById('teacherSel');
+  const nameTopEl = document.getElementById('nameTop');
+  const nameSignEl = document.getElementById('nameSign');
+  const ageFieldEl = document.getElementById('ageField');
+  let store = null, exporting = false, lastYear = '';
+
+  function currentFY() { const t = new Date(); const y = t.getMonth() >= 3 ? t.getFullYear() : t.getFullYear() - 1; return y + '-' + (y + 1); }
+  function newId() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function blankTeacher() { return { id: newId(), name: '', fields: [], year: currentFY(), ageAuto: false }; }
+  function getCurrent() { return store.teachers.find(t => t.id === store.currentId) || store.teachers[0]; }
+
+  function normalizeYear(v) {
+    const m = /^\s*(\d{4})\s*[-\u2013\/]\s*(\d{2}|\d{4})\s*$/.exec(v || '');
+    if (!m) return null;
+    let end = m[2]; if (end.length === 2) end = m[1].slice(0, 2) + end;
+    return m[1] + '-' + end;
+  }
+  function allYears() {
+    const t = new Date(); const y0 = t.getMonth() >= 3 ? t.getFullYear() : t.getFullYear() - 1;
+    const set = new Set();
+    for (let y = y0 - 5; y <= y0 + 3; y++) set.add(y + '-' + (y + 1));
+    (store.years || []).forEach(v => set.add(v));
+    store.teachers.forEach(t => t.year && set.add(t.year));
+    return Array.from(set).sort();
+  }
+  function buildYearOptions() {
+    const keep = yearSel.value;
+    yearSel.innerHTML = '';
+    allYears().forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o); });
+    const add = document.createElement('option'); add.value = '__add__'; add.textContent = '\u2795 Naya saal jodein...'; yearSel.appendChild(add);
+    if (keep && keep !== '__add__') yearSel.value = keep;
+  }
+  function syncYearPrint() { yearPrint.textContent = yearSel.value === '__add__' ? '' : yearSel.value; }
+
+  yearSel.addEventListener('change', () => {
+    if (yearSel.value === '__add__') {
+      const n = normalizeYear(prompt('Naya saal likhein (jaise 2029-2030):', ''));
+      if (n) { if (!store.years.includes(n)) store.years.push(n); buildYearOptions(); yearSel.value = n; }
+      else { yearSel.value = lastYear; }
+    }
+    lastYear = yearSel.value; syncYearPrint(); scheduleSave();
+  });
+
+  // ----- capture / apply a teacher's form to the page -----
+  function captureCurrent() {
+    const t = getCurrent(); if (!t) return;
+    t.fields = allFields().map(f => f.textContent);
+    t.year = yearSel.value === '__add__' ? lastYear : yearSel.value;
+    t.name = nameTopEl.textContent.trim();
+    t.ageAuto = ageFieldEl.dataset.auto === '1';
+  }
+  function applyTeacher(t) {
+    if (t.year && !allYears().includes(t.year)) { store.years.push(t.year); }
+    buildYearOptions();
+    yearSel.value = t.year || currentFY(); lastYear = yearSel.value; syncYearPrint();
+    allFields().forEach((el, i) => { el.textContent = (t.fields && t.fields[i]) || ''; el.style.background = ''; });
+    ageFieldEl.dataset.auto = t.ageAuto ? '1' : '0';
+    recomputeSyncFlags();
+    dobChanged();
+    if (typeof hideOptMenu === 'function') hideOptMenu();
+  }
+
+  function renderTeacherSelect() {
+    teacherSel.innerHTML = '';
+    store.teachers.forEach((t, i) => {
+      const o = document.createElement('option'); o.value = t.id;
+      const nm = (t.id === store.currentId ? nameTopEl.textContent.trim() : t.name) || '(Naya Teacher)';
+      o.textContent = (i + 1) + '. ' + nm;
+      teacherSel.appendChild(o);
+    });
+    teacherSel.value = store.currentId;
+  }
+
+  // ----- persistence -----
+  let saveTimer = null;
+  function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
+  function setStatus(msg, ok) {
+    const st = document.getElementById('saveStatus'); if (!st) return;
+    st.textContent = msg; st.style.color = ok ? '#27ae60' : '#c0392b';
+    if (ok) setTimeout(() => { if (st.textContent === msg) st.textContent = ''; }, 1500);
+  }
+  function persist() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); setStatus('\u2714 Saved', true); }
+    catch (err) { setStatus('\u26A0 Auto-save is browser mein nahi ho raha - Backup Download karein', false); }
+  }
+  function saveNow() {
+    if (exporting || !store) return;
+    clearTimeout(saveTimer);
+    captureCurrent(); renderTeacherSelect(); persist();
+  }
+  window.addEventListener('pagehide', saveNow);
+  window.addEventListener('beforeunload', saveNow);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveNow(); });
+
+  function loadStore() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) store = JSON.parse(raw);
+      else {
+        const old = localStorage.getItem(OLD_KEY);  // purana single-form data bachaane ke liye
+        if (old) {
+          const arr = JSON.parse(old); const t = blankTeacher();
+          t.fields = arr.slice(1); t.year = normalizeYear(arr[0]) || currentFY();
+          store = { v: 2, currentId: t.id, teachers: [t], years: [] };
+        }
+      }
+    } catch (err) { store = null; }
+    if (!store || !Array.isArray(store.teachers) || !store.teachers.length) {
+      const t = blankTeacher(); store = { v: 2, currentId: t.id, teachers: [t], years: [] };
+    }
+    if (!Array.isArray(store.years)) store.years = [];
+    if (!store.customOpts || typeof store.customOpts !== 'object') store.customOpts = {};
+    if (!store.teachers.some(t => t.id === store.currentId)) store.currentId = store.teachers[0].id;
+  }
+
+  // ----- teacher actions -----
+  function switchTeacher(id) {
+    saveNow();
+    store.currentId = id; applyTeacher(getCurrent()); renderTeacherSelect(); persist();
+    window.scrollTo(0, 0);
+  }
+  function addTeacher() {
+    saveNow();
+    const cur = getCurrent(); const t = blankTeacher(); t.year = cur.year;
+    // Same school ki common details (Place, Date, Department) naye form mein copy
+    allFields().forEach((el, i) => { if (el.dataset.share) t.fields[i] = el.textContent; });
+    store.teachers.push(t); store.currentId = t.id;
+    applyTeacher(t); renderTeacherSelect(); persist();
+    window.scrollTo(0, 0); nameTopEl.focus();
+  }
+  function deleteTeacher() {
+    const cur = getCurrent(); const label = cur.name || 'is teacher';
+    if (!confirm('"' + label + '" ka form hamesha ke liye hata diya jayega. Pakka?')) return;
+    const idx = store.teachers.indexOf(cur);
+    if (store.teachers.length === 1) { const t = blankTeacher(); t.year = cur.year; store.teachers = [t]; store.currentId = t.id; }
+    else { store.teachers.splice(idx, 1); store.currentId = store.teachers[Math.max(0, idx - 1)].id; }
+    applyTeacher(getCurrent()); renderTeacherSelect(); persist();
+  }
+  function clearAll() {
+    if (!confirm('Is teacher ka pura form saaf karna chahte hain?')) return;
+    const t = getCurrent(); t.fields = []; t.name = ''; t.ageAuto = false;
+    applyTeacher(t); saveNow();
+  }
+
+  // ---------- 7) PDF: ek teacher / sabhi merge / sabhi alag (ZIP) ----------
+  function busy(msg) {
+    const o = document.getElementById('busyOverlay');
+    if (!msg) { o.style.display = 'none'; return; }
+    document.getElementById('busyText').innerHTML = msg; o.style.display = 'flex';
+  }
+  const nextFrame = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 40)));
+  function safeName(s) { return (s || '').replace(/[^A-Za-z0-9\u0900-\u097F]+/g, '_').replace(/^_+|_+$/g, '') || 'Teacher'; }
+  function downloadBlob(blob, name) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+  async function addCurrentPagesToPdf(pdf, isFirst) {
+    const ids = ['page1', 'page2', 'page3'];
+    for (let k = 0; k < ids.length; k++) {
+      const page = document.getElementById(ids[k]);
+      page.classList.add('no-shadow');
+      const canvas = await html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#ffffff', ignoreElements: el => el.id === 'busyOverlay' });
+      page.classList.remove('no-shadow');
+      const img = canvas.toDataURL('image/jpeg', 0.95);
+      const w = pdf.internal.pageSize.getWidth(); const h = (canvas.height * w) / canvas.width;
+      if (!(isFirst && k === 0)) pdf.addPage();
+      pdf.addImage(img, 'JPEG', 0, 0, w, h, undefined, 'FAST');
+    }
+  }
+  async function runExport(mode) {
+    if (exporting) return;
+    if (!window.jspdf || !window.html2canvas) { alert('PDF library load nahi hui - internet check karein.'); return; }
+    if (mode === 'zip' && typeof JSZip === 'undefined') { alert('ZIP library load nahi hui - internet check karein.'); return; }
+    saveNow();
+    exporting = true; document.body.classList.add('pdf-export-mode');
+    const { jsPDF } = window.jspdf;
+    const list = mode === 'one' ? [getCurrent()] : store.teachers.slice();
+    const yr = getCurrent().year;
+    try {
+      let merged = null; const zip = mode === 'zip' ? new JSZip() : null;
+      for (let i = 0; i < list.length; i++) {
+        const t = list[i];
+        busy('PDF ban rahi hai... ' + (i + 1) + ' / ' + list.length + '<br><span style="font-size:14px;font-weight:normal">Kripya page band na karein</span>');
+        applyTeacher(t); await nextFrame();
+        if (mode === 'merge') {
+          if (!merged) merged = new jsPDF('p', 'mm', 'a4');
+          await addCurrentPagesToPdf(merged, i === 0);
+        } else {
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          await addCurrentPagesToPdf(pdf, true);
+          const fname = (list.length > 1 ? (i + 1) + '_' : '') + safeName(t.name || 'Teacher_' + (i + 1)) + '_' + t.year + '.pdf';
+          if (zip) zip.file(fname, pdf.output('blob')); else pdf.save('Asset_Declaration_' + fname);
+        }
+      }
+      if (merged) merged.save('Asset_Declaration_All_' + list.length + '_Teachers_' + yr + '.pdf');
+      if (zip) { busy('ZIP ban rahi hai...'); downloadBlob(await zip.generateAsync({ type: 'blob' }), 'Asset_Declaration_Separate_PDFs_' + yr + '.zip'); }
+    } catch (err) {
+      alert('PDF banane mein dikkat aayi: ' + (err && err.message ? err.message : err));
+    } finally {
+      exporting = false; document.body.classList.remove('pdf-export-mode');
+      applyTeacher(getCurrent()); busy(null);
+    }
+  }
+
+  // ---------- 8) Backup / Restore (browser data saaf ho jaye ya dusre phone/PC par le jaana ho) ----------
+  function backupDownload() {
+    saveNow();
+    const d = new Date(); const stamp = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    downloadBlob(new Blob([JSON.stringify(store)], { type: 'application/json' }), 'Property_Return_Backup_' + stamp + '.json');
+  }
+  function restoreFile(input) {
+    const f = input.files && input.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const data = JSON.parse(r.result);
+        if (!data || !Array.isArray(data.teachers) || !data.teachers.length) throw new Error('Is file mein teacher data nahi mila');
+        if (!confirm(data.teachers.length + ' teacher ka data mila. Ise maujooda forms ke saath jod dein?')) return;
+        saveNow();
+        data.teachers.forEach(t => { t.id = newId(); store.teachers.push(t); });
+        (data.years || []).forEach(y => { if (!store.years.includes(y)) store.years.push(y); });
+        if (data.customOpts) Object.keys(data.customOpts).forEach(k => { const cur = store.customOpts[k] || (store.customOpts[k] = []); (data.customOpts[k] || []).forEach(v => { if (!cur.includes(v)) cur.push(v); }); });
+        renderTeacherSelect(); buildYearOptions(); yearSel.value = lastYear; persist();
+        alert('Backup wapas jod diya gaya. Upar Teacher list se chunein.');
+      } catch (err) { alert('Backup file padhne mein dikkat: ' + err.message); }
+      input.value = '';
+    };
+    r.readAsText(f);
+  }
+
+  // ---------- 9) Table dropdowns: har cell mein Description ke hisaab se list, sabse pehle NIL ----------
+  const L = (...items) => ['NIL'].concat(items);
+  const BANKS = ['STATE BANK OF INDIA (SBI)', 'PUNJAB NATIONAL BANK (PNB)', 'BANK OF INDIA', 'BANK OF BARODA', 'CANARA BANK', 'UNION BANK OF INDIA', 'CENTRAL BANK OF INDIA', 'INDIAN BANK', 'DAKSHIN BIHAR GRAMIN BANK', 'UTTAR BIHAR GRAMIN BANK', 'INDIA POST PAYMENTS BANK', 'HDFC BANK', 'ICICI BANK', 'AXIS BANK'];
+  const AMT = L('RS. ');
+
+  // Page 1 - Movable assets (7 rows x 5 columns, har column mein ek hi list)
+  const P1 = [
+    L('CASH IN HAND - RS. '),
+    L(...BANKS.map(b => b + ' - RS. '), 'NON-BANKING FINANCIAL COMPANY - RS. '),
+    L('SHARES - RS. ', 'MUTUAL FUND - RS. ', 'BONDS - RS. ', 'DEBENTURES - RS. '),
+    L('LIC POLICY - RS. ', 'POST OFFICE SAVINGS - RS. ', 'NSC - RS. ', 'KVP - RS. ', 'PPF - RS. ', 'NPS (PRAN) - RS. ', 'GPF - RS. ', 'SUKANYA SAMRIDDHI - RS. ', 'OTHER INSURANCE POLICY - RS. '),
+    L('MOTORCYCLE', 'SCOOTER', 'CAR', 'TRACTOR', 'E-RICKSHAW', 'CYCLE'),
+    L('GOLD', 'SILVER', 'GOLD & SILVER'),
+    L('CLAIMS / INTERESTS - RS. ', 'HOUSEHOLD GOODS - RS. ', 'LOAN GIVEN TO OTHERS - RS. ')
+  ];
+  // Page 2 - Immovable assets (5 rows x 5 columns)
+  const P2A = [
+    L('SELF-PURCHASED', 'ANCESTRAL', 'GIFT', 'JOINT OWNERSHIP'),
+    L('PLOT (SELF-PURCHASED)', 'ANCESTRAL PLOT', 'JOINT OWNERSHIP'),
+    L('RESIDENTIAL BUILDING', 'COMMERCIAL BUILDING', 'SHOP'),
+    L('HOUSE (SELF-BUILT)', 'ANCESTRAL HOUSE', 'FLAT / APARTMENT'),
+    L('INTEREST IN PROPERTY - RS. ', 'SHARE IN JOINT FAMILY PROPERTY - ')
+  ];
+  // Page 2 - Liabilities (5 rows x 2 columns: [Name & address], [Amount])
+  const P2B = [
+    [L(...BANKS), AMT],
+    [L('LIC HOUSING FINANCE', 'LIC (POLICY LOAN)', 'BAJAJ FINANCE', 'COOPERATIVE SOCIETY / PACS', 'OTHER FINANCIAL INSTITUTION - '), AMT],
+    [L('BUILDING CONSTRUCTION DEPARTMENT', 'DISTRICT ADMINISTRATION (QUARTER RENT)'), AMT],
+    [L('PUBLIC HEALTH ENGINEERING DEPARTMENT (PHED)', 'NAGAR PARISHAD / NAGAR NIGAM (WATER)'), AMT],
+    [L('SOUTH BIHAR POWER DISTRIBUTION CO. LTD. (SBPDCL)', 'NORTH BIHAR POWER DISTRIBUTION CO. LTD. (NBPDCL)'), AMT]
+  ];
+  // Page 3 - Liabilities (7 rows x 2 columns)
+  const P3 = [
+    [L('BSNL', 'OTHER TELEPHONE DEPARTMENT'), AMT],
+    [L('STATE TRANSPORT DEPARTMENT', 'RAILWAYS'), AMT],
+    [L('OTHER GOVT. DUES - '), AMT],
+    [L('INCOME TAX DEPARTMENT - PAN: ', 'INCOME TAX DEPARTMENT - ITR FILED UPTO A.Y. '), AMT],
+    [L('WEALTH TAX DEPARTMENT - A.Y. '), AMT],
+    [L('COMMERCIAL TAXES DEPARTMENT (GST)'), AMT],
+    [L('NAGAR PARISHAD / NAGAR NIGAM', 'GRAM PANCHAYAT'), AMT]
+  ];
+
+  function attachOpts(tKey, tableSel, rowDefs, skipHeader, perColumn) {
+    const rows = Array.from(document.querySelectorAll(tableSel + ' tr')).slice(skipHeader ? 1 : 0);
+    rows.forEach((tr, i) => {
+      const def = rowDefs[i]; if (!def) return;
+      Array.from(tr.querySelectorAll('td[contenteditable="true"]')).forEach((cell, c) => {
+        const list = perColumn ? def[c] : def;
+        if (list) { cell._opts = list; cell._key = tKey + '-r' + i + (perColumn ? '-c' + c : ''); cell.dataset.opts = '1'; }
+      });
+    });
+  }
+  attachOpts('p1', '.table-p1', P1, true, false);
+  attachOpts('p2a', '.table-p2-a', P2A, true, false);
+  attachOpts('p2b', '.table-p2-b', P2B, true, true);
+  attachOpts('p3', '.table-p3', P3, false, true);
+
+
+  // ---- Jin rows mein Description "naap (measurement) + keemat (value)" puchhta hai ----
+  const U_LAND = ['DECIMAL', 'KATHA', 'DHUR', 'BIGHA', 'ACRE (EKAD)', 'HECTARE'];
+  const U_BLDG = ['SQ. FT.', 'SQ. METER', 'DECIMAL', 'KATHA', 'DHUR'];
+  const F_VAL = { type: 'money', label: 'Keemat (Value) - RS.', prefix: 'VALUE: RS. ' };
+  const landSpec = (locPrefix, snoPrefix, snoLabel, units) => ({ fields: [
+    { type: 'text', label: 'Gaon / Jagah (Location)', prefix: locPrefix },
+    { type: 'text', label: snoLabel, prefix: snoPrefix },
+    { type: 'measure', label: 'Naap (Measurement)', prefix: 'AREA: ', units: units },
+    F_VAL ] });
+  const B_JEWEL = { fields: [ { type: 'measure', label: 'Vajan (Weight)', prefix: 'WEIGHT: ', units: ['GM', 'KG', 'TOLA'] }, F_VAL ] };
+  const B_VEHICLE = { fields: [
+    { type: 'text', label: 'Company / Model (Make)', prefix: 'MAKE/MODEL: ' },
+    { type: 'text', label: 'Registration No.', prefix: 'REG. NO.: ' },
+    F_VAL ] };
+  function attachBuild(tableSel, rowIdx, spec) {
+    const tr = document.querySelectorAll(tableSel + ' tr')[rowIdx + 1]; // +1 = header row
+    if (tr) tr.querySelectorAll('td[contenteditable="true"]').forEach(c => { c._build = spec; });
+  }
+  attachBuild('.table-p1', 4, B_VEHICLE);
+  attachBuild('.table-p1', 5, B_JEWEL);
+  attachBuild('.table-p2-a', 0, landSpec('VILLAGE: ', 'SURVEY NO.: ', 'Khata / Khesra / Survey No.', U_LAND));
+  attachBuild('.table-p2-a', 1, landSpec('LOCATION: ', 'SURVEY NO.: ', 'Khata / Khesra / Survey No.', U_LAND.concat(['SQ. FT.'])));
+  attachBuild('.table-p2-a', 2, landSpec('LOCATION: ', 'SURVEY/DOOR NO.: ', 'Survey / Door No.', U_BLDG));
+  attachBuild('.table-p2-a', 3, landSpec('LOCATION: ', 'SURVEY/DOOR NO.: ', 'Survey / Door No.', U_BLDG));
+
+  // Gender -> M / F ; Class/Group -> A / B / C  (tay options, NIL / add nahi)
+  [['gender', ['M', 'F']], ['class', ['A', 'B', 'C']]].forEach(([type, list]) => {
+    const el = document.querySelector('.fill-blank[data-type="' + type + '"]');
+    if (el) { el._opts = list; el._key = 'fixed-' + type; el._fixed = true; el.dataset.opts = '1'; }
+  });
+
+  const optMenu = document.getElementById('optMenu');
+  let optCell = null, optIdx = -1, optTyped = false, picking = false, optShown = [], optOpenedAt = 0, optMode = 'list';
+
+  // base list + user ne jo naam add kiye (wo store mein save rehte hain)
+  function customOf(cell) { return (store && store.customOpts && store.customOpts[cell._key]) || []; }
+  function getList(cell) { if (cell._fixed) return cell._opts; return cell._opts.concat(customOf(cell).filter(v => !cell._opts.includes(v))); }
+
+  function hideOptMenu() { optMenu.style.display = 'none'; optCell = null; optIdx = -1; optMode = 'list'; }
+  function renderOptMenu() {
+    if (!optCell) return;
+    const typedText = optCell.textContent.trim();
+    const q = optTyped ? typedText.toUpperCase() : '';
+    const full = getList(optCell);
+    optShown = full.filter(o => !q || o.toUpperCase().includes(q));
+    // Option chun kar aage amount/detail likh rahe hain to menu baar-baar na khule
+    if (q && !optShown.length && full.some(o => o.trim() && q.startsWith(o.trim().toUpperCase()))) { optMenu.style.display = 'none'; return; }
+    const custom = customOf(optCell);
+    optMenu.innerHTML = '';
+    const head = document.createElement('div'); head.className = 'opt-head';
+    const ht = document.createElement('span'); ht.textContent = optCell._fixed ? 'Chunein' : 'Chunein ya khud likhein'; head.appendChild(ht);
+    const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'opt-ok'; ok.textContent = 'OK \u2713';
+    ok.addEventListener('mousedown', e => e.preventDefault());
+    ok.addEventListener('click', e => { e.stopPropagation(); hideOptMenu(); });
+    head.appendChild(ok); optMenu.appendChild(head);
+    optShown.forEach((o, i) => {
+      const d = document.createElement('div');
+      d.className = 'opt-item' + (o === 'NIL' ? ' nil' : '') + (i === optIdx ? ' active' : '');
+      const t = document.createElement('span'); t.textContent = o; d.appendChild(t);
+      if (custom.includes(o)) {
+        const x = document.createElement('span'); x.className = 'opt-del'; x.textContent = '\u2715'; x.title = 'Is naam ko list se hatayein';
+        x.addEventListener('mousedown', e => e.preventDefault());
+        x.addEventListener('click', e => { e.stopPropagation(); removeCustom(o); });
+        d.appendChild(x);
+      }
+      d.addEventListener('mousedown', e => e.preventDefault()); // cell se focus na hate
+      d.addEventListener('click', () => chooseOpt(o));
+      optMenu.appendChild(d);
+    });
+    if (optCell._fixed) { placeOptMenu(); return; } // Gender / Class: sirf tay options, add nahi
+    const add = document.createElement('div');
+    add.className = 'opt-item opt-add' + (optIdx === optShown.length ? ' active' : '');
+    add.textContent = q ? '\u2795 "' + typedText + '" ko list mein add karein' : '\u2795 Naya naam add karein...';
+    add.addEventListener('mousedown', e => e.preventDefault());
+    add.addEventListener('click', addCustom);
+    optMenu.appendChild(add);
+    placeOptMenu();
+  }
+  function isTouchUI() { return window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 700; }
+  function placeOptMenu() {
+    if (!optCell) return;
+    const vv = window.visualViewport;
+    optMenu.style.display = 'block';
+    if (isTouchUI()) {
+      // Phone: list screen ke neeche (keyboard ke theek upar) tiki rehti hai - kahin bhagti nahi
+      optMenu.classList.add('sheet');
+      const vh = vv ? vv.height : window.innerHeight, off = vv ? vv.offsetTop : 0;
+      const offL = vv ? vv.offsetLeft : 0, vw = vv ? vv.width : window.innerWidth;
+      optMenu.style.minWidth = '0'; optMenu.style.width = vw + 'px'; optMenu.style.left = offL + 'px';
+      const build = optMode === 'build';
+      optMenu.style.maxHeight = Math.max(160, Math.min(vh * (build ? 0.92 : 0.45), build ? 600 : 340)) + 'px';
+      const mh = optMenu.offsetHeight, sheetTop = off + vh - mh;
+      optMenu.style.top = sheetTop + 'px';
+      // Jis cell mein bhar rahe hain wo list ke peeche na chhup jaye
+      const r = optCell.getBoundingClientRect();
+      if (!build && r.bottom > sheetTop - 6) window.scrollBy(0, r.bottom - sheetTop + 14);
+    } else {
+      optMenu.classList.remove('sheet'); optMenu.style.width = ''; optMenu.style.maxHeight = '';
+      const r = optCell.getBoundingClientRect();
+      optMenu.style.minWidth = Math.max(r.width, optMode === 'build' ? 340 : 230) + 'px';
+      const mw = optMenu.offsetWidth, mh = optMenu.offsetHeight;
+      const vw = document.documentElement.clientWidth;
+      let left = Math.min(r.left, vw - mw - 6); left = Math.max(left, 6);
+      let top = r.bottom + 2;
+      if (top + mh > window.innerHeight && r.top > mh + 4) top = r.top - mh - 2;
+      optMenu.style.left = (left + window.scrollX) + 'px';
+      optMenu.style.top = (top + window.scrollY) + 'px';
+    }
+  }
+  function showOptMenu(cell) { optCell = cell; optMode = 'list'; optTyped = false; optIdx = -1; optOpenedAt = Date.now(); renderOptMenu(); }
+  function pickOpt(text, cell, noFocus) {
+    const c = cell || optCell; if (!c) return;
+    picking = true;
+    c.textContent = text.replace(/ $/, '\u00A0'); // aakhri space bani rahe taaki aage seedha amount type ho sake
+    hideOptMenu();
+    if (noFocus) { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); }
+    else focusEnd(c);
+    c.dispatchEvent(new Event('input', { bubbles: true }));
+    picking = false;
+  }
+
+  // ---------- Measurement + value wale rows: pehle prakar chunein, phir naap/keemat - sab ek hi cell mein ----------
+  function fmtMoney(v) { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? String(v).trim().toUpperCase() : n.toLocaleString('en-IN') + '/-'; }
+  function chooseOpt(o, cell) {
+    const c = cell || optCell; if (!c) return;
+    if (c._build && o !== 'NIL') openBuilder(c, o); else pickOpt(o, c);
+  }
+  function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
+  function openBuilder(cell, label) {
+    const spec = cell._build; optCell = cell; optMode = 'build'; optIdx = -1;
+    optMenu.innerHTML = '';
+    const state = spec.fields.map(f => ({ input: null, unit: f.units ? f.units[0] : '' }));
+    const commit = () => {
+      const parts = [label];
+      spec.fields.forEach((f, i) => {
+        const v = state[i].input.value.trim(); if (!v) return;
+        if (f.type === 'text') parts.push(f.prefix + v.toUpperCase());
+        else if (f.type === 'measure') parts.push(f.prefix + v + ' ' + state[i].unit);
+        else parts.push(f.prefix + fmtMoney(v));
+      });
+      pickOpt(parts.join(', '), cell, true);
+    };
+    // header: Wapas | naam | Bhar dein
+    const head = mk('div', 'opt-head');
+    const back = mk('button', 'opt-back', '\u2190 Wapas'); back.type = 'button';
+    back.addEventListener('mousedown', e => e.preventDefault());
+    back.addEventListener('click', e => { e.stopPropagation(); optMode = 'list'; renderOptMenu(); });
+    const title = mk('span', 'opt-title', label);
+    const fill = mk('button', 'opt-ok', 'Bhar dein \u2713'); fill.type = 'button';
+    fill.addEventListener('mousedown', e => e.preventDefault());
+    fill.addEventListener('click', e => { e.stopPropagation(); commit(); });
+    head.appendChild(back); head.appendChild(title); head.appendChild(fill);
+    optMenu.appendChild(head);
+    // form
+    const form = mk('div', 'opt-form');
+    const inputs = [];
+    spec.fields.forEach((f, i) => {
+      const box = mk('div'); box.appendChild(mk('label', '', f.label));
+      const inp = document.createElement('input'); inp.type = 'text'; state[i].input = inp; inputs.push(inp);
+      if (f.type === 'money') { inp.inputMode = 'decimal'; inp.placeholder = 'jaise 500000'; }
+      if (f.type === 'measure') { inp.inputMode = 'decimal'; inp.placeholder = 'matra'; }
+      if (f.type === 'text') inp.placeholder = 'yahan likhein';
+      inp.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault(); e.stopPropagation();
+        const k = inputs.indexOf(inp); if (k < inputs.length - 1) inputs[k + 1].focus(); else commit();
+      });
+      if (f.type === 'measure') {
+        const row = mk('div', 'opt-row'); row.appendChild(inp);
+        const units = mk('div', 'opt-units');
+        f.units.forEach(u => {
+          const b = mk('button', 'opt-unit' + (u === state[i].unit ? ' on' : ''), u); b.type = 'button';
+          b.addEventListener('mousedown', e => e.preventDefault()); // keyboard band na ho
+          b.addEventListener('click', e => { e.stopPropagation(); state[i].unit = u; units.querySelectorAll('.opt-unit').forEach(x => x.classList.toggle('on', x === b)); });
+          units.appendChild(b);
+        });
+        row.appendChild(units); box.appendChild(row);
+      } else box.appendChild(inp);
+      form.appendChild(box);
+    });
+    const go = mk('button', 'opt-go', 'Cell mein bhar dein \u2713'); go.type = 'button';
+    go.addEventListener('click', e => { e.stopPropagation(); commit(); });
+    form.appendChild(go);
+    optMenu.appendChild(form);
+    placeOptMenu();
+    setTimeout(() => { if (optMode === 'build' && inputs[0]) inputs[0].focus(); }, 60);
+  }
+
+  // ---- naya naam add / hatana ----
+  function addCustom() {
+    const c = optCell; if (!c) return;
+    let name = optTyped ? c.textContent.trim() : '';
+    if (!name) name = (prompt('Naya naam likhein jo is list mein jodna hai:', '') || '').trim();
+    if (!name) return;
+    name = name.toUpperCase().replace(/\s+/g, ' ');
+    // Agar is list ke saare options " - RS. " par khatam hote hain to wahi lagaa dein
+    const suf = c._opts.slice(1).every(o => o.endsWith(' - RS. ')) ? ' - RS. ' : '';
+    if (suf && !/RS\.\s*$/.test(name)) name += suf;
+    const exists = getList(c).some(o => o.trim().toUpperCase() === name.trim().toUpperCase());
+    if (!exists) {
+      if (!store.customOpts[c._key]) store.customOpts[c._key] = [];
+      store.customOpts[c._key].push(name);
+      persist();
+    }
+    chooseOpt(name, c);
+  }
+  function removeCustom(name) {
+    if (!optCell) return;
+    if (!confirm('"' + name.trim() + '" ko is list se hata dein? (Jo cells mein bhara hai wo nahi badlega)')) return;
+    store.customOpts[optCell._key] = customOf(optCell).filter(v => v !== name);
+    persist(); renderOptMenu();
+  }
+
+  document.addEventListener('focusin', e => {
+    if (picking) return;
+    if (e.target._opts) showOptMenu(e.target);
+    else if (!optMenu.contains(e.target)) hideOptMenu();
+  });
+  // Tap/click: cell par = list khule (ya us cell ke liye badle); list ke bahar kahin aur = tab band
+  document.addEventListener('click', e => {
+    const t = e.target;
+    // List abhi khuli hi hai (page ka apne aap thoda scroll hona tap ko "bahar ka click" na bana de)
+    if (Date.now() - optOpenedAt < 700) return;
+    if (t._opts) { if (optMenu.style.display !== 'block' || optCell !== t) showOptMenu(t); return; }
+    // composedPath: tap list ke andar hi hua tha, chahe list ka item (naya form banne se) hat chuka ho
+    if (optCell && !e.composedPath().includes(optMenu)) hideOptMenu();
+  });
+  document.addEventListener('input', e => {
+    if (picking || !e.target._opts) return;
+    if (optCell !== e.target) optCell = e.target;
+    optTyped = true; optIdx = -1; renderOptMenu();
+  });
+  // Arrow keys + Enter se list chunna (capture: normal Enter="agla box" se pehle)
+  document.addEventListener('keydown', e => {
+    if (!optCell || e.target !== optCell || optMenu.style.display !== 'block') return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      optIdx = e.key === 'ArrowDown' ? Math.min(optIdx + 1, optShown.length) : Math.max(optIdx - 1, 0);
+      renderOptMenu();
+      const a = optMenu.querySelector('.active'); if (a) a.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && optIdx >= 0) {
+      e.preventDefault(); e.stopPropagation();
+      if (optIdx === optShown.length) addCustom(); else chooseOpt(optShown[optIdx]);
+    } else if (e.key === 'Escape') { hideOptMenu(); }
+  }, true);
+  function repositionOptMenu() { if (optCell && optMenu.style.display === 'block') placeOptMenu(); }
+  window.addEventListener('resize', repositionOptMenu);
+  if (window.visualViewport) { // keyboard khulne/band hone par list ki jagah theek karo
+    window.visualViewport.addEventListener('resize', repositionOptMenu);
+    window.visualViewport.addEventListener('scroll', repositionOptMenu);
+  }
+
+  function fillNil() {
+    if (!confirm('Is teacher ke table ke sabhi khali cells mein NIL bhar diya jayega (jo bhare hain unhe nahi badlega). Theek hai?')) return;
+    let n = 0;
+    document.querySelectorAll('td[data-opts]').forEach(c => { if (!c.textContent.trim()) { c.textContent = 'NIL'; n++; } });
+    hideOptMenu(); saveNow(); setStatus('\u2714 ' + n + ' cells mein NIL bhara', true);
+  }
+
+  // ---------- Start ----------
+  loadStore();
+  applyTeacher(getCurrent());
+  renderTeacherSelect();
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+</script>
+
+</body>
+</html>
+
