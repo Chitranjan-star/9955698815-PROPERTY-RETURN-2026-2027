@@ -177,10 +177,16 @@
   @media print {
     body { background: none; padding: 0; }
     .action-buttons, .today-btn { display: none !important; }
-    .a4-page { box-shadow: none; margin: 0; padding: 0; page-break-after: always; }
+    html, body { width: 210mm; margin: 0 !important; padding: 0 !important; display: block !important; }
+    .a4-page { box-shadow: none !important; margin: 0 !important; padding: 0.50in 0.60in !important; width: 210mm !important; height: 296mm !important; overflow: hidden !important; page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
+    .a4-page:last-of-type { page-break-after: auto; break-after: auto; }
     [contenteditable="true"] { outline: none !important; background: transparent !important; }
     @page { size: A4; margin: 0; }
   }
+
+  /* ==================== TOOLBAR / BUTTONS / MENU: TIMES NEW ROMAN ==================== */
+  .action-buttons, .action-buttons *, .btn, .teacher-sel, .year-sel, .tb-lbl, .tb-tip, .save-status, .today-btn,
+  #optMenu, #optMenu *, .opt-back, .opt-form input, #busyText { font-family: 'Times New Roman', Times, serif !important; }
 </style>
 </head>
 <body>
@@ -738,6 +744,7 @@
     }
   }
   async function runExport(mode) {
+    try { formatAllMoney(); } catch (e) {}
     if (exporting) return;
     if (!window.jspdf || !window.html2canvas) { alert('PDF library load nahi hui - internet check karein.'); return; }
     if (mode === 'zip' && typeof JSZip === 'undefined') { alert('ZIP library load nahi hui - internet check karein.'); return; }
@@ -859,13 +866,19 @@
   // ---- Jin rows mein Description "naap (measurement) + keemat (value)" puchhta hai ----
   const U_LAND = ['DECIMAL', 'KATHA', 'DHUR', 'BIGHA', 'ACRE (EKAD)', 'HECTARE'];
   const U_BLDG = ['SQ. FT.', 'SQ. METER', 'DECIMAL', 'KATHA', 'DHUR'];
-  const F_VAL = { type: 'money', label: 'Keemat (Value) - RS.', prefix: 'VALUE: RS. ' };
+  const F_VAL = { type: 'money', label: 'Keemat (Value) - RS.', prefix: 'VALUE: ' };
   const landSpec = (locPrefix, snoPrefix, snoLabel, units) => ({ fields: [
     { type: 'text', label: 'Gaon / Jagah (Location)', prefix: locPrefix },
     { type: 'text', label: snoLabel, prefix: snoPrefix },
     { type: 'measure', label: 'Naap (Measurement)', prefix: 'AREA: ', units: units },
     F_VAL ] });
-  const B_JEWEL = { fields: [ { type: 'measure', label: 'Vajan (Weight)', prefix: 'WEIGHT: ', units: ['GM', 'KG', 'TOLA'] }, F_VAL ] };
+  const JU = ['GM', 'KG', 'TOLA'];
+  const B_JEWEL = { fields: [ { type: 'measure', label: 'Vajan (Weight)', prefix: 'WEIGHT: ', units: JU }, F_VAL ] };
+  const B_GOLD_SILVER = { noLabel: true, fields: [
+    { type: 'measure', label: 'GOLD - Vajan (Weight)', prefix: 'GOLD WEIGHT: ', units: JU },
+    { type: 'money', label: 'GOLD - Keemat (Value) - RS.', prefix: 'GOLD VALUE: ' },
+    { type: 'measure', label: 'SILVER - Vajan (Weight)', prefix: 'SILVER WEIGHT: ', units: JU },
+    { type: 'money', label: 'SILVER - Keemat (Value) - RS.', prefix: 'SILVER VALUE: ' } ] };
   const B_VEHICLE = { fields: [
     { type: 'text', label: 'Company / Model (Make)', prefix: 'MAKE/MODEL: ' },
     { type: 'text', label: 'Registration No.', prefix: 'REG. NO.: ' },
@@ -876,6 +889,11 @@
   }
   attachBuild('.table-p1', 4, B_VEHICLE);
   attachBuild('.table-p1', 5, B_JEWEL);
+  (function () { const tr = document.querySelectorAll('.table-p1 tr')[6]; if (tr) tr.querySelectorAll('td[contenteditable="true"]').forEach(c => { c._buildBoth = B_GOLD_SILVER; }); })();
+  // Liabilities ke amount column: sirf number likhne par bhi RS.x/- ban jaye
+  ['.table-p2-b', '.table-p3'].forEach(sel => document.querySelectorAll(sel + ' tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td[contenteditable="true"]'); if (tds[1]) tds[1]._money = true;
+  }));
   attachBuild('.table-p2-a', 0, landSpec('VILLAGE: ', 'SURVEY NO.: ', 'Khata / Khesra / Survey No.', U_LAND));
   attachBuild('.table-p2-a', 1, landSpec('LOCATION: ', 'SURVEY NO.: ', 'Khata / Khesra / Survey No.', U_LAND.concat(['SQ. FT.'])));
   attachBuild('.table-p2-a', 2, landSpec('LOCATION: ', 'SURVEY/DOOR NO.: ', 'Survey / Door No.', U_BLDG));
@@ -978,18 +996,36 @@
   }
 
   // ---------- Measurement + value wale rows: pehle prakar chunein, phir naap/keemat - sab ek hi cell mein ----------
-  function fmtMoney(v) { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? String(v).trim().toUpperCase() : n.toLocaleString('en-IN') + '/-'; }
+  function fmtMoney(v) { const n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? String(v).trim().toUpperCase() : 'RS.' + n.toLocaleString('en-IN', { maximumFractionDigits: 2 }) + '/-'; }
+  // Cell ke aakhir mein likhi rakam ko RS.1,20,000/- format mein badalta hai
+  function fixMoneyText(t) {
+    return t.replace(/RS\.?\s*([\d,]*\d(?:\.\d+)?)\s*(?:\/-)?\s*$/i, (m, num) => fmtMoney(num));
+  }
+  function formatMoneyCell(c) {
+    let t = c.textContent.replace(/\u00A0/g, ' ').trim();
+    if (!t || t.toUpperCase() === 'NIL') return;
+    let out = t;
+    if (c._money && /^[\d,]+(\.\d+)?\s*(\/-)?$/.test(t)) out = fmtMoney(t.replace(/\/-/, '').trim());
+    else out = fixMoneyText(t);
+    if (out !== t) c.textContent = out;
+  }
+  function formatAllMoney() { document.querySelectorAll('td[data-opts]').forEach(formatMoneyCell); }
+  window.addEventListener('beforeprint', () => { formatAllMoney(); if (typeof scheduleSave === 'function') scheduleSave(); });
+  document.addEventListener('focusout', e => {
+    const c = e.target;
+    if (c && c.matches && c.matches('td[data-opts]') && !picking) { formatMoneyCell(c); if (typeof scheduleSave === 'function') scheduleSave(); }
+  });
   function chooseOpt(o, cell) {
     const c = cell || optCell; if (!c) return;
     if (c._build && o !== 'NIL') openBuilder(c, o); else pickOpt(o, c);
   }
   function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
   function openBuilder(cell, label) {
-    const spec = cell._build; optCell = cell; optMode = 'build'; optIdx = -1;
+    const spec = (label === 'GOLD & SILVER' && cell._buildBoth) ? cell._buildBoth : cell._build; optCell = cell; optMode = 'build'; optIdx = -1;
     optMenu.innerHTML = '';
     const state = spec.fields.map(f => ({ input: null, unit: f.units ? f.units[0] : '' }));
     const commit = () => {
-      const parts = [label];
+      const parts = spec.noLabel ? [] : [label];
       spec.fields.forEach((f, i) => {
         const v = state[i].input.value.trim(); if (!v) return;
         if (f.type === 'text') parts.push(f.prefix + v.toUpperCase());
